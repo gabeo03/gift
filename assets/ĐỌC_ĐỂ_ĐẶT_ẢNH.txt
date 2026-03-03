@@ -1,0 +1,16 @@
+HƯỚNG DẪN ĐẶT ẢNH KHỦNG LONG
+==============================
+
+Đặt 2 file ảnh PNG vào thư mục này (assets/):
+
+  1. dino_male.png    — Ảnh khủng long ĐỰC (nhân vật chính chạy)
+  2. dino_female.png  — Ảnh khủng long CÁI (phần thưởng khi thắng)
+
+Kích thước khuyến nghị:
+  - Khoảng 80x90 px hoặc tỉ lệ tương đương
+  - Định dạng PNG (có nền trong suốt càng đẹp)
+
+Nếu không đặt ảnh:
+  - Game vẫn chạy bình thường
+  - Khủng long đực hiển thị màu XANH
+  - Khủng long cái hiển thị màu HỒNG
