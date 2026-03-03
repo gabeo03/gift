@@ -70,8 +70,8 @@ function pickQ() {
 class LoadingScene extends Phaser.Scene {
   constructor() { super({ key: 'LoadingScene' }); }
   preload() {
-    this.load.image('dino_male',   'assets/dino_male.png');
-    this.load.image('dino_female', 'assets/dino_female.png');
+    this.load.image('dino_male', '/assets/dino_male.png');
+    this.load.image('dino_female', '/assets/dino_female.png');
     const W = this.scale.width, H = this.scale.height;
     const bg = this.add.graphics(), bar = this.add.graphics();
     bg.fillStyle(0x1e293b).fillRect(W*.25, H*.47, W*.5, 24);
