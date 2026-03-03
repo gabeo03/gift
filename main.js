@@ -194,13 +194,7 @@ class GameScene extends Phaser.Scene {
       fontSize:'14px',fill:'#fbbf24',fontFamily:'Segoe UI'
     }).setOrigin(0.5,0).setDepth(10);
 
-    // Nút nhảy mobile
-    this.jumpBtn=this.add.text(W-18,H-18,'⬆️',{fontSize:'50px'})
-      .setOrigin(1,1).setDepth(20).setAlpha(0.65).setInteractive({useHandCursor:true});
-    this.jumpBtn.on('pointerdown',()=>{
-      if(this.st===ST.IDLE){this.startGame();return;}
-      this.doJump();
-    });
+
 
     // Hint – font nhỏ hơn
     this.hintText=this.add.text(W/2,H/2,'💕 LOVE PURSUIT\n\nNhấn SPACE hoặc Tap để bắt đầu',{
