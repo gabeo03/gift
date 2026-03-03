@@ -42,6 +42,16 @@ class LoadingScene extends Phaser.Scene {
   preload() {
     this.load.image('dino_male',   'assets/dino_male.png');
     this.load.image('dino_female', 'assets/dino_female.png');
+
+    // ── AUDIO ──
+    this.load.audio('bgm',       'assets/music.mp3');
+    this.load.audio('snd_jump',  'assets/jump.mp3');
+    this.load.audio('snd_hit',   'assets/hit.mp3');
+    this.load.audio('snd_win',   'assets/win.mp3');
+    this.load.audio('snd_lose',  'assets/lose.mp3');
+    this.load.audio('snd_boss',  'assets/boss.mp3');
+    this.load.audio('snd_power', 'assets/power.mp3');
+
     const W=this.scale.width, H=this.scale.height;
     const bg=this.add.graphics(), bar=this.add.graphics();
     bg.fillStyle(0x1e293b).fillRect(W*.25,H*.47,W*.5,24);
@@ -55,37 +65,49 @@ class LoadingScene extends Phaser.Scene {
 class GameScene extends Phaser.Scene {
   constructor() { super({ key:'GameScene' }); }
 
+  // Hàm phát âm thanh an toàn (không crash nếu file không tồn tại)
+  playSfx(key, cfg={}) {
+    try {
+      if (this.cache.audio.exists(key)) this.sound.play(key, cfg);
+    } catch(e){}
+  }
+
+  // Khởi động nhạc nền (chỉ gọi sau thao tác người dùng – tránh lỗi mobile)
+  startBGM() {
+    if (this.bgm) return; // đã đang chạy
+    try {
+      if (this.cache.audio.exists('bgm')) {
+        this.bgm = this.sound.add('bgm', { loop:true, volume:0.38 });
+        this.bgm.play();
+      }
+    } catch(e){}
+  }
+
   preload() {
     const g = this.make.graphics({x:0,y:0,add:false});
     g.fillStyle(0x334155).fillRect(0,0,800,26); g.fillStyle(0x475569).fillRect(0,0,800,6);
     g.generateTexture('ground',800,26); g.clear();
-
     g.fillStyle(0x16a34a);
     g.fillRect(18,0,16,80); g.fillRect(0,22,52,16); g.fillRect(0,14,18,14); g.fillRect(34,14,18,14);
     g.generateTexture('cactus',52,82); g.clear();
-
     g.fillStyle(0x94a3b8); g.fillEllipse(34,28,68,54);
     g.fillStyle(0x64748b); g.fillEllipse(22,22,30,22);
     g.fillStyle(0xe2e8f0); g.fillEllipse(44,16,14,10);
     g.generateTexture('rock',68,58); g.clear();
-
     g.fillStyle(0xdc2626); g.fillEllipse(45,40,70,60); g.fillStyle(0xb91c1c); g.fillEllipse(45,55,60,40);
     g.fillStyle(0xfca5a5); g.fillCircle(32,28,8); g.fillCircle(58,28,8);
     g.fillStyle(0x7f1d1d); g.fillCircle(34,28,4); g.fillCircle(60,28,4);
     g.fillStyle(0xef4444); g.fillRect(28,44,34,8);
     g.fillStyle(0xdc2626); g.fillTriangle(25,15,18,0,32,0); g.fillTriangle(65,15,58,0,72,0);
     g.generateTexture('boss_mini1',90,70); g.clear();
-
     g.fillStyle(0x1d4ed8); g.fillEllipse(45,40,70,60); g.fillStyle(0x1e40af); g.fillEllipse(45,55,60,40);
     g.fillStyle(0xbfdbfe); g.fillCircle(32,28,8); g.fillCircle(58,28,8);
     g.fillStyle(0x1e3a8a); g.fillCircle(34,28,4); g.fillCircle(60,28,4);
     g.generateTexture('boss_mini2',90,70); g.clear();
-
     g.lineStyle(10,0x38bdf8,1); g.strokeCircle(60,60,55);
     g.lineStyle(5,0x7dd3fc,0.6); g.strokeCircle(60,60,45);
     g.lineStyle(3,0xbae6fd,0.3); g.strokeCircle(60,60,35);
     g.generateTexture('shield_ring',120,120); g.clear();
-
     g.fillStyle(0x312e81,0.9); g.fillTriangle(0,60,50,0,50,120);
     g.fillStyle(0x4338ca,0.7); g.fillTriangle(10,60,50,20,50,100);
     g.fillStyle(0x312e81,0.9); g.fillTriangle(150,60,100,0,100,120);
@@ -95,10 +117,8 @@ class GameScene extends Phaser.Scene {
     g.fillStyle(0xff6666); g.fillCircle(60,50,5); g.fillCircle(90,50,5);
     g.fillStyle(0x4c1d95); g.fillTriangle(60,20,52,0,68,0); g.fillTriangle(90,20,82,0,98,0);
     g.generateTexture('boss_final',150,120); g.clear();
-
     g.fillStyle(0x94a3b8); g.fillEllipse(55,24,110,42); g.fillEllipse(95,18,88,34); g.fillEllipse(22,30,64,28);
     g.generateTexture('cloud',150,54); g.clear();
-
     g.fillStyle(0x22c55e).fillRect(0,0,80,90); g.generateTexture('dino_fallback',80,90); g.clear();
     g.fillStyle(0xff69b4).fillRect(0,0,80,90); g.generateTexture('dino_female_fallback',80,90);
     g.destroy();
@@ -112,7 +132,7 @@ class GameScene extends Phaser.Scene {
     this.obsCleared    = 0;
     this.bossIndex     = 0;
     this.distance      = DISTANCE_INIT;
-    this.lives         = MAX_LIVES;   // ❤️ số mạng
+    this.lives         = MAX_LIVES;
     this.timerSecs     = 0;
     this.timerEv       = null;
     this.currentQ      = null;
@@ -123,11 +143,11 @@ class GameScene extends Phaser.Scene {
     this.wingR         = null;
     this.obstacleTimer = null;
     this.obstacleSpeed = -300;
+    this.bgm           = null;   // nhạc nền
     qPool=[...QUESTIONS]; qUsed=[];
 
     const W=this.scale.width, H=this.scale.height;
 
-    // BG
     const bgGfx=this.add.graphics();
     bgGfx.fillGradientStyle(0x0f172a,0x0f172a,0x1e293b,0x1e293b,1);
     bgGfx.fillRect(0,0,W,H);
@@ -144,13 +164,11 @@ class GameScene extends Phaser.Scene {
 
     this.ground=this.physics.add.staticImage(W/2,H*.966,'ground').setDisplaySize(W,26).refreshBody();
 
-    // Female dino – ẩn ngoài màn hình
     const femKey=this.getKey('dino_female');
     this.female=this.add.image(W+200,H*.84,femKey);
     const fs=Math.min(110/this.female.width,120/this.female.height);
     this.female.setScale(fs).setFlipX(false).setDepth(2).setVisible(false);
 
-    // Male dino
     const maleKey=this.getKey('dino_male');
     this.dino=this.physics.add.sprite(W*.13,H*.84,maleKey);
     const ds=Math.min(110/this.dino.width,120/this.dino.height);
@@ -162,30 +180,37 @@ class GameScene extends Phaser.Scene {
 
     this.cursors =this.input.keyboard.createCursorKeys();
     this.spaceKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // ── Pointer: khởi nhạc + nhảy (mobile-safe) ──
     this.input.on('pointerdown',(ptr)=>{
+      this.startBGM(); // lần đầu chạm → nhạc bật (bypass autoplay block)
       if(this.st===ST.QUESTION) return;
       if(this.st===ST.IDLE){this.startGame();return;}
       this.doJump();
     });
 
-    // ── UI Layout ──
-    // Row 1: Score (trái) | (giữa trống) | (phải trống)
+    // Keyboard cũng kích hoạt nhạc
+    this.spaceKey.on('down',()=>{ this.startBGM(); });
+    this.cursors.up.on('down',()=>{ this.startBGM(); });
+
+    // ── UI ──
     this.scoreTxt=this.add.text(12,10,'Score: 0',{
       fontSize:'18px',fill:'#f1f5f9',fontFamily:'Segoe UI',fontStyle:'bold'
     }).setDepth(10);
 
-    // Row 2: Label khoảng cách (căn giữa, y=42)
+    // Nút tắt/mở nhạc (góc phải trên)
+    this.muteBtn=this.add.text(W-12,10,'🔊',{fontSize:'22px'})
+      .setOrigin(1,0).setDepth(20).setInteractive({useHandCursor:true});
+    this.muteBtn.on('pointerdown',()=>this.toggleMute());
+
     this.add.text(W/2,38,'💕 Khoảng cách tình yêu 💕',{
       fontSize:'13px',fill:'#f9a8d4',fontFamily:'Segoe UI'
     }).setOrigin(0.5,0).setDepth(10);
-
-    // Row 3: Thanh khoảng cách (y=58)
     const barY=58;
     this.add.rectangle(W/2,barY,W*.72,14,0x1e293b).setDepth(10);
     this.distBar=this.add.rectangle(W/2-W*.36,barY,W*.72,14,0xec4899).setOrigin(0,0.5).setDepth(11);
     this.distBarShine=this.add.rectangle(W/2-W*.36,barY-3,W*.72,5,0xfce7f3,0.4).setOrigin(0,0.5).setDepth(12);
 
-    // Row 4: ❤️ mạng sống + obstacle count (y=80)
     const infoY=80;
     this.livesTxt=this.add.text(W/2-60,infoY,'❤️❤️❤️',{
       fontSize:'20px',fill:'#f43f5e',fontFamily:'Segoe UI'
@@ -194,9 +219,14 @@ class GameScene extends Phaser.Scene {
       fontSize:'14px',fill:'#fbbf24',fontFamily:'Segoe UI'
     }).setOrigin(0.5,0).setDepth(10);
 
+    this.jumpBtn=this.add.text(W-18,H-18,'⬆️',{fontSize:'50px'})
+      .setOrigin(1,1).setDepth(20).setAlpha(0.65).setInteractive({useHandCursor:true});
+    this.jumpBtn.on('pointerdown',()=>{
+      this.startBGM();
+      if(this.st===ST.IDLE){this.startGame();return;}
+      this.doJump();
+    });
 
-
-    // Hint – font nhỏ hơn
     this.hintText=this.add.text(W/2,H/2,'💕 LOVE PURSUIT\n\nNhấn SPACE hoặc Tap để bắt đầu',{
       fontSize:'22px',fill:'#fde68a',fontFamily:'Segoe UI',fontStyle:'bold',
       backgroundColor:'#0f172a',padding:{x:20,y:14},align:'center'
@@ -208,20 +238,35 @@ class GameScene extends Phaser.Scene {
     document.getElementById('submit-btn').onclick=()=>this.checkAnswer();
     document.getElementById('answer-input').onkeydown=e=>{if(e.key==='Enter')this.checkAnswer();};
 
-    this.updateDistBar();
-    this.updateLivesUI();
+    this.updateDistBar(); this.updateLivesUI();
+  }
+
+  toggleMute(){
+    if(!this.bgm){ this.muteBtn.setText('🔇'); return; }
+    if(this.bgm.isPlaying){
+      this.bgm.pause();
+      this.sound.mute=true;
+      this.muteBtn.setText('🔇');
+    } else {
+      this.bgm.resume();
+      this.sound.mute=false;
+      this.muteBtn.setText('🔊');
+    }
   }
 
   startGame(){
     if(this.st!==ST.IDLE) return;
     if(this.hintText){this.hintText.destroy();this.hintText=null;}
     this.st=ST.RUNNING;
+    this.startBGM();
     this.startObstacleTimer();
   }
 
   doJump(){
-    if(this.dino&&this.dino.body&&this.dino.body.blocked.down)
+    if(this.dino&&this.dino.body&&this.dino.body.blocked.down){
       this.dino.setVelocityY(-640);
+      this.playSfx('snd_jump',{volume:0.6});
+    }
   }
 
   startObstacleTimer(){
@@ -234,8 +279,10 @@ class GameScene extends Phaser.Scene {
 
   update(){
     if(this.st!==ST.RUNNING) return;
-    if((this.cursors.up.isDown||this.spaceKey.isDown)&&this.dino.body.blocked.down)
+    if((this.cursors.up.isDown||this.spaceKey.isDown)&&this.dino.body.blocked.down){
       this.dino.setVelocityY(-640);
+      this.playSfx('snd_jump',{volume:0.6});
+    }
     this.obstacleSpeed=Math.max(-620,-300-Math.floor(this.score/15)*14);
     this.clouds.forEach(c=>{c.x-=0.8;if(c.x<-90) c.x=this.scale.width+90;});
     this.obstacles.getChildren().forEach(o=>{
@@ -263,12 +310,12 @@ class GameScene extends Phaser.Scene {
     if(this.obsCleared>=nb.after) this.time.delayedCall(300,()=>this.triggerBossWarning());
   }
 
-  // ── Va chạm chướng ngại vật: CHỈ mất mạng, KHÔNG tăng khoảng cách ──
   onDinoHit(dino,obstacle){
     if(this.st!==ST.RUNNING) return;
     obstacle.destroy();
     this.cameras.main.shake(280,0.013);
     this.dino.setTint(0xff4444);
+    this.playSfx('snd_hit',{volume:0.7});
     this.time.delayedCall(380,()=>{if(this.dino) this.dino.clearTint();});
     this.lives--;
     this.updateLivesUI();
@@ -283,7 +330,6 @@ class GameScene extends Phaser.Scene {
     this.distBar.setSize(W*.72*pct,14);
     this.distBarShine.setSize(W*.72*pct,5);
   }
-
   updateLivesUI(){
     const hearts='❤️'.repeat(this.lives)+'🖤'.repeat(Math.max(0,MAX_LIVES-this.lives));
     this.livesTxt.setText(hearts);
@@ -294,12 +340,14 @@ class GameScene extends Phaser.Scene {
     if(this.st!==ST.RUNNING) return;
     this.st=ST.BOSS_WARNING;
     this.stopObstacleTimer(); this.physics.pause(); this.obstacles.clear(true,true);
+    // Nhạc boss thay nhạc nền
+    if(this.bgm&&this.bgm.isPlaying) this.bgm.pause();
+    this.playSfx('snd_boss',{volume:0.7});
     const boss=BOSSES[this.bossIndex];
     const W=this.scale.width,H=this.scale.height;
     this.cameras.main.shake(700,0.02);
     const ov=this.add.rectangle(W/2,H/2,W,H,0x000000,0).setDepth(18);
     this.tweens.add({targets:ov,alpha:0.6,duration:500});
-    // Font nhỏ lại
     const wt=this.add.text(W/2,H*.30,'⚠️  BOSS APPEARS!',{
       fontSize:'32px',fill:'#fde047',fontFamily:'Segoe UI',fontStyle:'bold',stroke:'#92400e',strokeThickness:4
     }).setOrigin(0.5).setDepth(19).setAlpha(0);
@@ -308,7 +356,6 @@ class GameScene extends Phaser.Scene {
       fontSize:'24px',fill:'#f9a8d4',fontFamily:'Segoe UI',fontStyle:'bold'
     }).setOrigin(0.5).setDepth(19).setAlpha(0);
     this.tweens.add({targets:nt,alpha:1,duration:400,delay:400});
-    // Cảnh báo thua ngay nếu sai
     const warnT=this.add.text(W/2,H*.56,'⚠️ Trả lời sai = Thua ngay!',{
       fontSize:'18px',fill:'#fca5a5',fontFamily:'Segoe UI',fontStyle:'bold'
     }).setOrigin(0.5).setDepth(19).setAlpha(0);
@@ -321,7 +368,6 @@ class GameScene extends Phaser.Scene {
     const boss=BOSSES[this.bossIndex];
     const W=this.scale.width,H=this.scale.height;
     const texKey=boss.id==='mini1'?'boss_mini1':boss.id==='mini2'?'boss_mini2':'boss_final';
-
     if(boss.wings){
       this.wingL=this.add.triangle(W*.58-100,H*.36,0,60,80,0,80,120,0x312e81,0.85).setDepth(6);
       this.wingR=this.add.triangle(W*.58+100,H*.36,0,60,-80,0,-80,120,0x312e81,0.85).setDepth(6);
@@ -389,6 +435,7 @@ class GameScene extends Phaser.Scene {
     const fb=document.getElementById('feedback');
     if(userAns===correct){
       fb.style.color='#16a34a'; fb.textContent='✅ Đúng! POWER UP! 💥';
+      this.playSfx('snd_power',{volume:0.8});
       this.time.delayedCall(700,()=>{
         document.getElementById('question-overlay').style.display='none';
         document.getElementById('question-box').style.borderColor='';
@@ -396,18 +443,17 @@ class GameScene extends Phaser.Scene {
       });
     } else {
       fb.style.color='#dc2626'; fb.textContent=`❌ Sai! Đáp án: "${this.currentQ.a}" — Thua rồi!`;
+      this.playSfx('snd_hit',{volume:0.8});
       this.time.delayedCall(1200,()=>this.processWrong());
     }
   }
 
-  // ── Thua boss = thua ngay, không có hitback ──
   processWrong(){
     document.getElementById('question-overlay').style.display='none';
     document.getElementById('question-box').style.borderColor='';
     this.cleanupBoss();
     this.triggerLose();
   }
-
   cleanupBoss(){
     if(this.bossSpr){this.bossSpr.destroy();this.bossSpr=null;}
     if(this.shieldSpr){this.shieldSpr.destroy();this.shieldSpr=null;}
@@ -419,6 +465,8 @@ class GameScene extends Phaser.Scene {
   // ============================================================
   triggerPower(){
     this.st=ST.POWER;
+    // Nhạc nền tiếp tục sau boss
+    if(this.bgm&&!this.bgm.isPlaying&&!this.sound.mute) this.bgm.resume();
     const W=this.scale.width,H=this.scale.height;
     const boss=BOSSES[this.bossIndex];
     const auraColor=boss.id==='final'?0xa855f7:0xff69b4;
@@ -456,7 +504,6 @@ class GameScene extends Phaser.Scene {
     if(this.bossAura){this.bossAura.destroy();this.bossAura=null;}
     if(this.wingL){this.tweens.add({targets:this.wingL,alpha:0,duration:400,onComplete:()=>{if(this.wingL){this.wingL.destroy();this.wingL=null;}}});}
     if(this.wingR){this.tweens.add({targets:this.wingR,alpha:0,duration:400,onComplete:()=>{if(this.wingR){this.wingR.destroy();this.wingR=null;}}});}
-
     const ems=['💕','❤️','💖','💗','✨','💥','🌸','💫'];
     const colors=boss.id==='mini1'?[0xff4444,0xff8800,0xffcc00]:boss.id==='mini2'?[0x38bdf8,0x818cf8,0xffffff]:[0xa855f7,0x6366f1,0xffffff,0xff00ff];
     const count=boss.id==='final'?30:20;
@@ -483,20 +530,18 @@ class GameScene extends Phaser.Scene {
     if(this.st===ST.WIN) return;
     this.st=ST.WIN;
     this.stopObstacleTimer(); this.physics.pause(); this.obstacles.clear(true,true);
+    // Tắt nhạc nền, phát nhạc thắng
+    if(this.bgm) this.bgm.stop();
+    this.playSfx('snd_win',{volume:0.9});
     const W=this.scale.width,H=this.scale.height;
-
     this.time.timeScale=0.3; this.tweens.timeScale=0.3;
     this.time.delayedCall(1000,()=>{
       this.time.timeScale=1; this.tweens.timeScale=1;
-
       const pink=this.add.rectangle(W/2,H/2,W,H,0xff69b4,0).setDepth(8);
       this.tweens.add({targets:pink,alpha:0.28,duration:1800});
-
-      // Female dino chạy vào từ bên phải
       this.female.setVisible(true);
       this.female.setPosition(W+150,H*.84);
       this.female.setFlipX(true);
-
       const targetX=this.dino.x+this.dino.displayWidth*0.6;
       this.tweens.add({
         targets:this.female, x:targetX, duration:1400, ease:'Power3.easeOut',
@@ -514,7 +559,6 @@ class GameScene extends Phaser.Scene {
             this.tweens.add({targets:[this.dino,this.female],x:'+=10',duration:380,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
             this.showHearts(); this.createConfetti(90); this.createFireworks(10,W/2,H*.3);
             this.time.delayedCall(600,()=>{
-              // Font nhỏ hơn cho win screen
               const t1=this.add.text(W/2,H*.07,'💕 Bắt kịp Crush rồi! 💕',{
                 fontSize:'36px',fill:'#fde68a',fontFamily:'Segoe UI',fontStyle:'bold',stroke:'#92400e',strokeThickness:4
               }).setOrigin(0.5).setDepth(15).setAlpha(0);
@@ -543,11 +587,12 @@ class GameScene extends Phaser.Scene {
     this.st=ST.LOSE;
     this.stopObstacleTimer(); this.physics.pause();
     document.getElementById('question-overlay').style.display='none';
+    if(this.bgm) this.bgm.stop();
+    this.playSfx('snd_lose',{volume:0.8});
     const W=this.scale.width,H=this.scale.height;
     this.cameras.main.shake(800,0.028);
     const ov=this.add.rectangle(W/2,H/2,W,H,0x7f0000,0).setDepth(18);
     this.tweens.add({targets:ov,alpha:0.72,duration:700});
-    // Font nhỏ hơn cho lose screen
     const t1=this.add.text(W/2,H*.30,'💔 Crush đã chạy xa...',{
       fontSize:'34px',fill:'#fca5a5',fontFamily:'Segoe UI',fontStyle:'bold',stroke:'#7f0000',strokeThickness:4
     }).setOrigin(0.5).setDepth(19).setAlpha(0);
