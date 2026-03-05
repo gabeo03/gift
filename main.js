@@ -419,7 +419,7 @@ class GameScene extends Phaser.Scene {
         this.triggerPower();
       });
     } else {
-      fb.style.color='#dc2626'; fb.textContent=`❌ Sai! Đáp án: "${this.currentQ.a}" — Thua rồi!`;
+      fb.style.color='#dc2626'; fb.textContent=`❌ Sai! Thua rồi!`;
       this.playSfx('snd_hit',{volume:0.8});
       this.time.delayedCall(1200,()=>this.processWrong());
     }
