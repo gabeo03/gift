@@ -2,15 +2,15 @@ import Phaser from 'phaser';
 
 const QUESTIONS = [
   { q: "Ngày sinh của Nga?",             a: "6/7/2007" },
-  { q: "Thủ đô Việt Nam?",              a: "hà nội" },
+  { q: "1",              a: "1" },
   { q: "5 × 6 = ?",                     a: "30" },
   { q: "HTML viết tắt của gì?",         a: "html" },
   { q: "10 - 3 = ?",                    a: "7" },
   { q: "Ngôn ngữ dùng đuôi .py?",       a: "python" },
   { q: "1 mét = ? cm",                  a: "100" },
   { q: "Căn bậc 2 của 144?",           a: "12" },
-  { q: "Hoa gì tượng trưng tình yêu?",  a: "hoa hồng" },
-  { q: "I love you = ?",               a: "tôi yêu bạn" },
+  { q: "2",  a: "2" },
+  { q: "I love you = ?",               a: "3" },
 ];
 
 const BOSSES = [
@@ -42,8 +42,6 @@ class LoadingScene extends Phaser.Scene {
   preload() {
     this.load.image('dino_male',   'assets/dino_male.png');
     this.load.image('dino_female', 'assets/dino_female.png');
-
-    // ── AUDIO ──
     this.load.audio('bgm',       'assets/music.mp3');
     this.load.audio('snd_jump',  'assets/jump.mp3');
     this.load.audio('snd_hit',   'assets/hit.mp3');
@@ -51,7 +49,6 @@ class LoadingScene extends Phaser.Scene {
     this.load.audio('snd_lose',  'assets/lose.mp3');
     this.load.audio('snd_boss',  'assets/boss.mp3');
     this.load.audio('snd_power', 'assets/power.mp3');
-
     const W=this.scale.width, H=this.scale.height;
     const bg=this.add.graphics(), bar=this.add.graphics();
     bg.fillStyle(0x1e293b).fillRect(W*.25,H*.47,W*.5,24);
@@ -65,16 +62,12 @@ class LoadingScene extends Phaser.Scene {
 class GameScene extends Phaser.Scene {
   constructor() { super({ key:'GameScene' }); }
 
-  // Hàm phát âm thanh an toàn (không crash nếu file không tồn tại)
   playSfx(key, cfg={}) {
-    try {
-      if (this.cache.audio.exists(key)) this.sound.play(key, cfg);
-    } catch(e){}
+    try { if (this.cache.audio.exists(key)) this.sound.play(key, cfg); } catch(e){}
   }
 
-  // Khởi động nhạc nền (chỉ gọi sau thao tác người dùng – tránh lỗi mobile)
   startBGM() {
-    if (this.bgm) return; // đã đang chạy
+    if (this.bgm) return;
     try {
       if (this.cache.audio.exists('bgm')) {
         this.bgm = this.sound.add('bgm', { loop:true, volume:0.38 });
@@ -143,7 +136,7 @@ class GameScene extends Phaser.Scene {
     this.wingR         = null;
     this.obstacleTimer = null;
     this.obstacleSpeed = -300;
-    this.bgm           = null;   // nhạc nền
+    this.bgm           = null;
     qPool=[...QUESTIONS]; qUsed=[];
 
     const W=this.scale.width, H=this.scale.height;
@@ -181,15 +174,12 @@ class GameScene extends Phaser.Scene {
     this.cursors =this.input.keyboard.createCursorKeys();
     this.spaceKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-    // ── Pointer: khởi nhạc + nhảy (mobile-safe) ──
-    this.input.on('pointerdown',(ptr)=>{
-      this.startBGM(); // lần đầu chạm → nhạc bật (bypass autoplay block)
+    this.input.on('pointerdown',()=>{
+      this.startBGM();
       if(this.st===ST.QUESTION) return;
       if(this.st===ST.IDLE){this.startGame();return;}
       this.doJump();
     });
-
-    // Keyboard cũng kích hoạt nhạc
     this.spaceKey.on('down',()=>{ this.startBGM(); });
     this.cursors.up.on('down',()=>{ this.startBGM(); });
 
@@ -198,7 +188,6 @@ class GameScene extends Phaser.Scene {
       fontSize:'18px',fill:'#f1f5f9',fontFamily:'Segoe UI',fontStyle:'bold'
     }).setDepth(10);
 
-    // Nút tắt/mở nhạc (góc phải trên)
     this.muteBtn=this.add.text(W-12,10,'🔊',{fontSize:'22px'})
       .setOrigin(1,0).setDepth(20).setInteractive({useHandCursor:true});
     this.muteBtn.on('pointerdown',()=>this.toggleMute());
@@ -219,13 +208,7 @@ class GameScene extends Phaser.Scene {
       fontSize:'14px',fill:'#fbbf24',fontFamily:'Segoe UI'
     }).setOrigin(0.5,0).setDepth(10);
 
-    this.jumpBtn=this.add.text(W-18,H-18,'⬆️',{fontSize:'50px'})
-      .setOrigin(1,1).setDepth(20).setAlpha(0.65).setInteractive({useHandCursor:true});
-    this.jumpBtn.on('pointerdown',()=>{
-      this.startBGM();
-      if(this.st===ST.IDLE){this.startGame();return;}
-      this.doJump();
-    });
+ 
 
     this.hintText=this.add.text(W/2,H/2,'💕 LOVE PURSUIT\n\nNhấn SPACE hoặc Tap để bắt đầu',{
       fontSize:'22px',fill:'#fde68a',fontFamily:'Segoe UI',fontStyle:'bold',
@@ -244,13 +227,9 @@ class GameScene extends Phaser.Scene {
   toggleMute(){
     if(!this.bgm){ this.muteBtn.setText('🔇'); return; }
     if(this.bgm.isPlaying){
-      this.bgm.pause();
-      this.sound.mute=true;
-      this.muteBtn.setText('🔇');
+      this.bgm.pause(); this.sound.mute=true; this.muteBtn.setText('🔇');
     } else {
-      this.bgm.resume();
-      this.sound.mute=false;
-      this.muteBtn.setText('🔊');
+      this.bgm.resume(); this.sound.mute=false; this.muteBtn.setText('🔊');
     }
   }
 
@@ -335,12 +314,10 @@ class GameScene extends Phaser.Scene {
     this.livesTxt.setText(hearts);
   }
 
-  // ============================================================
   triggerBossWarning(){
     if(this.st!==ST.RUNNING) return;
     this.st=ST.BOSS_WARNING;
     this.stopObstacleTimer(); this.physics.pause(); this.obstacles.clear(true,true);
-    // Nhạc boss thay nhạc nền
     if(this.bgm&&this.bgm.isPlaying) this.bgm.pause();
     this.playSfx('snd_boss',{volume:0.7});
     const boss=BOSSES[this.bossIndex];
@@ -462,10 +439,8 @@ class GameScene extends Phaser.Scene {
     if(this.wingR){this.wingR.destroy();this.wingR=null;}
   }
 
-  // ============================================================
   triggerPower(){
     this.st=ST.POWER;
-    // Nhạc nền tiếp tục sau boss
     if(this.bgm&&!this.bgm.isPlaying&&!this.sound.mute) this.bgm.resume();
     const W=this.scale.width,H=this.scale.height;
     const boss=BOSSES[this.bossIndex];
@@ -526,11 +501,12 @@ class GameScene extends Phaser.Scene {
   }
 
   // ============================================================
+  // WIN – female dino chạy vào + nút 🎁 Nhận Quà → win.html
+  // ============================================================
   triggerWin(){
     if(this.st===ST.WIN) return;
     this.st=ST.WIN;
     this.stopObstacleTimer(); this.physics.pause(); this.obstacles.clear(true,true);
-    // Tắt nhạc nền, phát nhạc thắng
     if(this.bgm) this.bgm.stop();
     this.playSfx('snd_win',{volume:0.9});
     const W=this.scale.width,H=this.scale.height;
@@ -563,17 +539,36 @@ class GameScene extends Phaser.Scene {
                 fontSize:'36px',fill:'#fde68a',fontFamily:'Segoe UI',fontStyle:'bold',stroke:'#92400e',strokeThickness:4
               }).setOrigin(0.5).setDepth(15).setAlpha(0);
               this.tweens.add({targets:t1,alpha:1,duration:700});
+
               const t2=this.add.text(W/2,H*.185,`Score: ${Math.floor(this.score)} 🌟  |  Vượt ${BOSSES.length} boss!`,{
                 fontSize:'20px',fill:'#86efac',fontFamily:'Segoe UI'
               }).setOrigin(0.5).setDepth(15).setAlpha(0);
               this.tweens.add({targets:t2,alpha:1,duration:700,delay:300});
-              const btn=this.add.text(W/2,H*.88,'▶  Chơi lại',{
-                fontSize:'22px',fill:'#fff',fontFamily:'Segoe UI',backgroundColor:'#6366f1',padding:{x:26,y:14}
+
+              // ── NÚT 🎁 NHẬN QUÀ → win.html ──
+              const btnGift=this.add.text(W/2,H*.76,'🎁  Nhận Quà',{
+                fontSize:'26px',fill:'#fff',fontFamily:'Segoe UI',fontStyle:'bold',
+                backgroundColor:'#ec4899',padding:{x:34,y:18}
+              }).setOrigin(0.5).setDepth(16).setAlpha(0).setInteractive({useHandCursor:true});
+              // Pulse animation cho nút quà
+              this.tweens.add({targets:btnGift,alpha:1,duration:600,delay:800,
+                onComplete:()=>{
+                  this.tweens.add({targets:btnGift,scale:1.06,duration:500,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+                }
+              });
+              btnGift.on('pointerover',()=>{ btnGift.setStyle({backgroundColor:'#db2777'}); });
+              btnGift.on('pointerout', ()=>{ btnGift.setStyle({backgroundColor:'#ec4899'}); });
+              btnGift.on('pointerdown',()=>{ window.location.href='win.html'; });
+
+              // ── NÚT ▶ CHƠI LẠI ──
+              const btnReplay=this.add.text(W/2,H*.88,'▶  Chơi lại',{
+                fontSize:'20px',fill:'#cbd5e1',fontFamily:'Segoe UI',
+                backgroundColor:'#334155',padding:{x:24,y:12}
               }).setOrigin(0.5).setDepth(15).setAlpha(0).setInteractive({useHandCursor:true});
-              btn.on('pointerover',()=>btn.setStyle({backgroundColor:'#4f46e5'}));
-              btn.on('pointerout', ()=>btn.setStyle({backgroundColor:'#6366f1'}));
-              btn.on('pointerdown',()=>{qPool=[...QUESTIONS];qUsed=[];this.scene.restart();});
-              this.tweens.add({targets:btn,alpha:1,duration:600,delay:1200});
+              btnReplay.on('pointerover',()=>btnReplay.setStyle({backgroundColor:'#475569'}));
+              btnReplay.on('pointerout', ()=>btnReplay.setStyle({backgroundColor:'#334155'}));
+              btnReplay.on('pointerdown',()=>{qPool=[...QUESTIONS];qUsed=[];this.scene.restart();});
+              this.tweens.add({targets:btnReplay,alpha:1,duration:500,delay:1400});
             });
           });
         }
@@ -582,6 +577,9 @@ class GameScene extends Phaser.Scene {
     this.callRewardAPI(Math.floor(this.score));
   }
 
+  // ============================================================
+  // LOSE – nút 🎭 Nhận Phạt → lose.html
+  // ============================================================
   triggerLose(){
     if(this.st===ST.LOSE) return;
     this.st=ST.LOSE;
@@ -593,21 +591,41 @@ class GameScene extends Phaser.Scene {
     this.cameras.main.shake(800,0.028);
     const ov=this.add.rectangle(W/2,H/2,W,H,0x7f0000,0).setDepth(18);
     this.tweens.add({targets:ov,alpha:0.72,duration:700});
-    const t1=this.add.text(W/2,H*.30,'💔 Crush đã chạy xa...',{
+
+    const t1=this.add.text(W/2,H*.28,'💔 Crush đã chạy xa...',{
       fontSize:'34px',fill:'#fca5a5',fontFamily:'Segoe UI',fontStyle:'bold',stroke:'#7f0000',strokeThickness:4
     }).setOrigin(0.5).setDepth(19).setAlpha(0);
     this.tweens.add({targets:t1,alpha:1,duration:500});
-    const t2=this.add.text(W/2,H*.44,'Thất bại rồi 😭\nLần sau cố lên nhé!',{
+
+    const t2=this.add.text(W/2,H*.41,'Thất bại rồi 😭\nLần sau cố lên nhé!',{
       fontSize:'22px',fill:'#fecaca',fontFamily:'Segoe UI',align:'center'
     }).setOrigin(0.5).setDepth(19).setAlpha(0);
     this.tweens.add({targets:t2,alpha:1,duration:500,delay:300});
-    const btn=this.add.text(W/2,H*.62,'🔄 Thử lại',{
-      fontSize:'22px',fill:'#fff',fontFamily:'Segoe UI',backgroundColor:'#dc2626',padding:{x:26,y:14}
+
+    // ── NÚT 🎭 NHẬN PHẠT → lose.html ──
+    const btnPunish=this.add.text(W/2,H*.57,'🎭  Nhận Phạt',{
+      fontSize:'26px',fill:'#fff',fontFamily:'Segoe UI',fontStyle:'bold',
+      backgroundColor:'#7c2d12',padding:{x:34,y:18}
     }).setOrigin(0.5).setDepth(19).setAlpha(0).setInteractive({useHandCursor:true});
-    btn.on('pointerover',()=>btn.setStyle({backgroundColor:'#b91c1c'}));
-    btn.on('pointerout', ()=>btn.setStyle({backgroundColor:'#dc2626'}));
-    btn.on('pointerdown',()=>{qPool=[...QUESTIONS];qUsed=[];this.scene.restart();});
-    this.tweens.add({targets:btn,alpha:1,duration:500,delay:700});
+    this.tweens.add({targets:btnPunish,alpha:1,duration:600,delay:700,
+      onComplete:()=>{
+        // Rung nhẹ nút phạt
+        this.tweens.add({targets:btnPunish,x:W/2+4,duration:80,yoyo:true,repeat:-1,ease:'Linear'});
+      }
+    });
+    btnPunish.on('pointerover',()=>{ btnPunish.setStyle({backgroundColor:'#9a3412'}); });
+    btnPunish.on('pointerout', ()=>{ btnPunish.setStyle({backgroundColor:'#7c2d12'}); });
+    btnPunish.on('pointerdown',()=>{ window.location.href='lose.html'; });
+
+    // ── NÚT 🔄 THỬ LẠI ──
+    const btnRetry=this.add.text(W/2,H*.70,'🔄  Thử lại',{
+      fontSize:'20px',fill:'#cbd5e1',fontFamily:'Segoe UI',
+      backgroundColor:'#334155',padding:{x:24,y:12}
+    }).setOrigin(0.5).setDepth(19).setAlpha(0).setInteractive({useHandCursor:true});
+    btnRetry.on('pointerover',()=>btnRetry.setStyle({backgroundColor:'#475569'}));
+    btnRetry.on('pointerout', ()=>btnRetry.setStyle({backgroundColor:'#334155'}));
+    btnRetry.on('pointerdown',()=>{qPool=[...QUESTIONS];qUsed=[];this.scene.restart();});
+    this.tweens.add({targets:btnRetry,alpha:1,duration:500,delay:1200});
   }
 
   showHearts(){
