@@ -184,12 +184,12 @@ class GameScene extends Phaser.Scene {
     const femKey=this.getKey('dino_female');
     this.female=this.add.image(W+200,H*.84,femKey);
     const fs=Math.min(110/this.female.width,120/this.female.height);
-    this.female.setScale(fs).setFlipX(false).setDepth(2).setVisible(false);
+    this.female.setScale(fs * 1.8).setFlipX(false).setDepth(2).setVisible(false);
 
     const maleKey=this.getKey('dino_male');
     this.dino=this.physics.add.sprite(W*.13,H*.84,maleKey);
     const ds=Math.min(110/this.dino.width,120/this.dino.height);
-    this.dino.setScale(ds).setCollideWorldBounds(true).setDepth(3);
+    this.dino.setScale(ds * 1.8).setCollideWorldBounds(true).setDepth(3);
     this.physics.add.collider(this.dino,this.ground);
 
     this.obstacles=this.physics.add.group();
