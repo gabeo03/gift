@@ -408,7 +408,7 @@ p.sub{color:rgba(255,255,255,.78);font-size:1.05em;line-height:1.6;margin-bottom
     </div>
     <div class="btns-row">
       <button class="btn btn-blue" onclick="buildEggs()">🔁 Chơi lại</button>
-      <button class="btn btn-rose" onclick="window.location.href='index.html'">💘 Chinh phục lại crush</button>
+      <button class="btn btn-rose" onclick="goBack()">💘 Chinh phục lại crush</button>
     </div>
   </div>
 </div>
@@ -564,8 +564,10 @@ function spawnDeco(){
   card.appendChild(d);
   setTimeout(()=>d.remove(),2800);
 }
-
-
+function goBack(){
+  const id = window.location.pathname.split('/').filter(Boolean)[0] || 'default';
+  window.location.href = '/' + id;
+}
 </script>
 </body>
 </html>
