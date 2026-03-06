@@ -1,17 +1,42 @@
 import Phaser from 'phaser';
 
-const QUESTIONS = [
+// ================== CUSTOMER CONFIG ==================
+function getCustomerId() {
+  const first = window.location.pathname.split('/').filter(Boolean)[0];
+  return first || 'default';
+}
+
+const CUSTOMER_ID  = getCustomerId();
+const CUSTOMER_DIR = `/customers/${CUSTOMER_ID}`;
+
+const DEFAULT_QUESTIONS = [
   { q: "Ngày sinh của Nga?",             a: "6/7/2007" },
-  { q: "1",              a: "1" },
-  { q: "5 × 6 = ?",                     a: "30" },
+  { q: "1",                              a: "1" },
+  { q: "5 × 6 = ?",                      a: "30" },
   { q: "HTML viết tắt của gì?",         a: "html" },
-  { q: "10 - 3 = ?",                    a: "7" },
+  { q: "10 - 3 = ?",                     a: "7" },
   { q: "Ngôn ngữ dùng đuôi .py?",       a: "python" },
-  { q: "1 mét = ? cm",                  a: "100" },
-  { q: "Căn bậc 2 của 144?",           a: "12" },
-  { q: "2",  a: "2" },
-  { q: "I love you = ?",               a: "3" },
+  { q: "1 mét = ? cm",                   a: "100" },
+  { q: "Căn bậc 2 của 144?",            a: "12" },
+  { q: "2",                              a: "2" },
+  { q: "I love you = ?",                a: "3" },
 ];
+
+let QUESTIONS = [...DEFAULT_QUESTIONS];
+
+function loadCustomerConfig(id) {
+  return fetch(`/customers/${id}/config.json`, { cache: 'no-store' })
+    .then(r => (r.ok ? r.json() : { questions: null }))
+    .catch(() => ({ questions: null }))
+    .then(cfg => {
+      if (Array.isArray(cfg.questions) && cfg.questions.length) {
+        QUESTIONS = cfg.questions;
+      } else {
+        QUESTIONS = [...DEFAULT_QUESTIONS];
+      }
+    });
+}
+// =====================================================
 
 const BOSSES = [
   { id:'mini1', name:'🔴 Mini Boss – Dino Đỏ',     after:5,  timer:12, scale:2.0, wings:false, shield:false },
@@ -40,15 +65,14 @@ function pickQ() {
 class LoadingScene extends Phaser.Scene {
   constructor() { super({ key:'LoadingScene' }); }
   preload() {
-    this.load.image('dino_male',   'assets/dino_male.png');
-    this.load.image('dino_female', 'assets/dino_female.png');
-    this.load.audio('bgm',       'assets/music.mp3');
-    this.load.audio('snd_jump',  'assets/jump.mp3');
-    this.load.audio('snd_hit',   'assets/hit.mp3');
-    this.load.audio('snd_win',   'assets/win.mp3');
-    this.load.audio('snd_lose',  'assets/lose.mp3');
-    this.load.audio('snd_boss',  'assets/boss.mp3');
-    this.load.audio('snd_power', 'assets/power.mp3');
+    // ← ảnh dino load theo từng khách hàng
+    this.load.image('dino_male',   `${CUSTOMER_DIR}/dino_male.png`);
+    this.load.image('dino_female', `${CUSTOMER_DIR}/dino_female.png`);
+    // nhạc dùng chung từ public/assets
+    this.load.audio('bgm',      '/assets/music.mp3');
+    this.load.audio('snd_boss', '/assets/boss.mp3');
+    this.load.audio('snd_win',  '/assets/win.mp3');
+    this.load.audio('snd_lose', '/assets/lose.mp3');
     const W=this.scale.width, H=this.scale.height;
     const bg=this.add.graphics(), bar=this.add.graphics();
     bg.fillStyle(0x1e293b).fillRect(W*.25,H*.47,W*.5,24);
@@ -183,7 +207,6 @@ class GameScene extends Phaser.Scene {
     this.spaceKey.on('down',()=>{ this.startBGM(); });
     this.cursors.up.on('down',()=>{ this.startBGM(); });
 
-    // ── UI ──
     this.scoreTxt=this.add.text(12,10,'Score: 0',{
       fontSize:'18px',fill:'#f1f5f9',fontFamily:'Segoe UI',fontStyle:'bold'
     }).setDepth(10);
@@ -207,8 +230,6 @@ class GameScene extends Phaser.Scene {
     this.obsTxt=this.add.text(W/2+60,infoY,'🌵 0/5',{
       fontSize:'14px',fill:'#fbbf24',fontFamily:'Segoe UI'
     }).setOrigin(0.5,0).setDepth(10);
-
- 
 
     this.hintText=this.add.text(W/2,H/2,'💕 LOVE PURSUIT\n\nNhấn SPACE hoặc Tap để bắt đầu',{
       fontSize:'22px',fill:'#fde68a',fontFamily:'Segoe UI',fontStyle:'bold',
@@ -419,7 +440,7 @@ class GameScene extends Phaser.Scene {
         this.triggerPower();
       });
     } else {
-      fb.style.color='#dc2626'; fb.textContent=`❌ Sai! Thua rồi!`;
+      fb.style.color='#dc2626'; fb.textContent='❌ Sai! Thua rồi!';
       this.playSfx('snd_hit',{volume:0.8});
       this.time.delayedCall(1200,()=>this.processWrong());
     }
@@ -500,9 +521,6 @@ class GameScene extends Phaser.Scene {
     if(boss.id==='final') this.createFireworks(4,x,y);
   }
 
-  // ============================================================
-  // WIN – female dino chạy vào + nút 🎁 Nhận Quà → win.html
-  // ============================================================
   triggerWin(){
     if(this.st===ST.WIN) return;
     this.st=ST.WIN;
@@ -539,18 +557,14 @@ class GameScene extends Phaser.Scene {
                 fontSize:'36px',fill:'#fde68a',fontFamily:'Segoe UI',fontStyle:'bold',stroke:'#92400e',strokeThickness:4
               }).setOrigin(0.5).setDepth(15).setAlpha(0);
               this.tweens.add({targets:t1,alpha:1,duration:700});
-
               const t2=this.add.text(W/2,H*.185,`Score: ${Math.floor(this.score)} 🌟  |  Vượt ${BOSSES.length} boss!`,{
                 fontSize:'20px',fill:'#86efac',fontFamily:'Segoe UI'
               }).setOrigin(0.5).setDepth(15).setAlpha(0);
               this.tweens.add({targets:t2,alpha:1,duration:700,delay:300});
-
-              // ── NÚT 🎁 NHẬN QUÀ → win.html ──
               const btnGift=this.add.text(W/2,H*.76,'🎁  Nhận Quà',{
                 fontSize:'26px',fill:'#fff',fontFamily:'Segoe UI',fontStyle:'bold',
                 backgroundColor:'#ec4899',padding:{x:34,y:18}
               }).setOrigin(0.5).setDepth(16).setAlpha(0).setInteractive({useHandCursor:true});
-              // Pulse animation cho nút quà
               this.tweens.add({targets:btnGift,alpha:1,duration:600,delay:800,
                 onComplete:()=>{
                   this.tweens.add({targets:btnGift,scale:1.06,duration:500,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
@@ -558,9 +572,8 @@ class GameScene extends Phaser.Scene {
               });
               btnGift.on('pointerover',()=>{ btnGift.setStyle({backgroundColor:'#db2777'}); });
               btnGift.on('pointerout', ()=>{ btnGift.setStyle({backgroundColor:'#ec4899'}); });
-              btnGift.on('pointerdown',()=>{ window.location.href='win.html'; });
-
-              // ── NÚT ▶ CHƠI LẠI ──
+              // ← chuyển sang /<customer>/win thay vì win.html
+              btnGift.on('pointerdown',()=>{ window.location.href=`/${CUSTOMER_ID}/win`; });
               const btnReplay=this.add.text(W/2,H*.88,'▶  Chơi lại',{
                 fontSize:'20px',fill:'#cbd5e1',fontFamily:'Segoe UI',
                 backgroundColor:'#334155',padding:{x:24,y:12}
@@ -577,9 +590,6 @@ class GameScene extends Phaser.Scene {
     this.callRewardAPI(Math.floor(this.score));
   }
 
-  // ============================================================
-  // LOSE – nút 🎭 Nhận Phạt → lose.html
-  // ============================================================
   triggerLose(){
     if(this.st===ST.LOSE) return;
     this.st=ST.LOSE;
@@ -591,33 +601,27 @@ class GameScene extends Phaser.Scene {
     this.cameras.main.shake(800,0.028);
     const ov=this.add.rectangle(W/2,H/2,W,H,0x7f0000,0).setDepth(18);
     this.tweens.add({targets:ov,alpha:0.72,duration:700});
-
     const t1=this.add.text(W/2,H*.28,'💔 Crush đã chạy xa...',{
       fontSize:'34px',fill:'#fca5a5',fontFamily:'Segoe UI',fontStyle:'bold',stroke:'#7f0000',strokeThickness:4
     }).setOrigin(0.5).setDepth(19).setAlpha(0);
     this.tweens.add({targets:t1,alpha:1,duration:500});
-
     const t2=this.add.text(W/2,H*.41,'Thất bại rồi 😭\nLần sau cố lên nhé!',{
       fontSize:'22px',fill:'#fecaca',fontFamily:'Segoe UI',align:'center'
     }).setOrigin(0.5).setDepth(19).setAlpha(0);
     this.tweens.add({targets:t2,alpha:1,duration:500,delay:300});
-
-    // ── NÚT 🎭 NHẬN PHẠT → lose.html ──
     const btnPunish=this.add.text(W/2,H*.57,'🎭  Nhận Phạt',{
       fontSize:'26px',fill:'#fff',fontFamily:'Segoe UI',fontStyle:'bold',
       backgroundColor:'#7c2d12',padding:{x:34,y:18}
     }).setOrigin(0.5).setDepth(19).setAlpha(0).setInteractive({useHandCursor:true});
     this.tweens.add({targets:btnPunish,alpha:1,duration:600,delay:700,
       onComplete:()=>{
-        // Rung nhẹ nút phạt
         this.tweens.add({targets:btnPunish,x:W/2+4,duration:80,yoyo:true,repeat:-1,ease:'Linear'});
       }
     });
     btnPunish.on('pointerover',()=>{ btnPunish.setStyle({backgroundColor:'#9a3412'}); });
     btnPunish.on('pointerout', ()=>{ btnPunish.setStyle({backgroundColor:'#7c2d12'}); });
-    btnPunish.on('pointerdown',()=>{ window.location.href='lose.html'; });
-
-    // ── NÚT 🔄 THỬ LẠI ──
+    // ← chuyển sang /<customer>/lose thay vì lose.html
+    btnPunish.on('pointerdown',()=>{ window.location.href=`/${CUSTOMER_ID}/lose`; });
     const btnRetry=this.add.text(W/2,H*.70,'🔄  Thử lại',{
       fontSize:'20px',fill:'#cbd5e1',fontFamily:'Segoe UI',
       backgroundColor:'#334155',padding:{x:24,y:12}
@@ -676,9 +680,12 @@ class GameScene extends Phaser.Scene {
   }
 }
 
-new Phaser.Game({
-  type:Phaser.AUTO, width:window.innerWidth, height:window.innerHeight, parent:document.body,
-  scale:{mode:Phaser.Scale.RESIZE,autoCenter:Phaser.Scale.CENTER_BOTH},
-  physics:{default:'arcade',arcade:{gravity:{y:900},debug:false}},
-  scene:[LoadingScene,GameScene],
+// ← load config khách trước, sau đó mới khởi động game
+loadCustomerConfig(CUSTOMER_ID).finally(()=>{
+  new Phaser.Game({
+    type:Phaser.AUTO, width:window.innerWidth, height:window.innerHeight, parent:document.body,
+    scale:{mode:Phaser.Scale.RESIZE,autoCenter:Phaser.Scale.CENTER_BOTH},
+    physics:{default:'arcade',arcade:{gravity:{y:900},debug:false}},
+    scene:[LoadingScene,GameScene],
+  });
 });
