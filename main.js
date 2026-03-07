@@ -29,7 +29,6 @@ function loadCustomerConfig(id) {
     .then(r => (r.ok ? r.json() : { questions: null }))
     .catch(() => ({ questions: null }))
     .then(cfg => {
-      // Ưu tiên: Setup screen > config.json > default
       if (window.CUSTOM_QUESTIONS?.length) {
         QUESTIONS = window.CUSTOM_QUESTIONS;
       } else if (Array.isArray(cfg.questions) && cfg.questions.length) {
@@ -42,9 +41,9 @@ function loadCustomerConfig(id) {
 // =====================================================
 
 const BOSSES = [
-  { id:'mini1', name:'🔴 Mini Boss – Dino Đỏ',     after:5,  timer:12, scale:2.0, wings:false, shield:false },
-  { id:'mini2', name:'🛡️ Mini Boss – Dino Khiên',  after:10, timer:10, scale:2.0, wings:false, shield:true  },
-  { id:'final', name:'💀 SHADOW DINO – FINAL BOSS', after:15, timer:8,  scale:3.2, wings:true,  shield:false },
+  { id:'mini1', name:'🔴 Mini Boss – Dino Đỏ',     after:5,  timer:12, scale:2.0, wings:false, shield:false, totalQ:1 },
+  { id:'mini2', name:'🛡️ Mini Boss – Dino Khiên',  after:10, timer:10, scale:2.0, wings:false, shield:true,  totalQ:1 },
+  { id:'final', name:'💀 SHADOW DINO – FINAL BOSS', after:15, timer:8,  scale:3.2, wings:true,  shield:false, totalQ:2 },
 ];
 
 const OBSTACLE_INTERVAL = 1900;
@@ -154,6 +153,7 @@ class GameScene extends Phaser.Scene {
     this.timerSecs     = 0;
     this.timerEv       = null;
     this.currentQ      = null;
+    this.currentQNum   = 1;
     this.bossSpr       = null;
     this.bossAura      = null;
     this.shieldSpr     = null;
@@ -237,7 +237,6 @@ class GameScene extends Phaser.Scene {
       backgroundColor:'#0f172a',padding:{x:20,y:14},align:'center'
     }).setOrigin(0.5).setDepth(20);
 
-    // Ẩn hint cho đến khi female chạy đi xong
     this.hintText.setVisible(false);
 
     document.getElementById('submit-btn').onclick=()=>this.checkAnswer();
@@ -245,7 +244,6 @@ class GameScene extends Phaser.Scene {
 
     this.updateDistBar(); this.updateLivesUI();
 
-    // Đăng ký callback cho setup screen
     window.gameReady = () => {
       if (window.CUSTOM_QUESTIONS?.length) {
         QUESTIONS = window.CUSTOM_QUESTIONS;
@@ -274,7 +272,6 @@ class GameScene extends Phaser.Scene {
 
   playFemaleRunAway() {
     const W = this.scale.width, H = this.scale.height;
-
     this.female.setVisible(true);
     this.female.setPosition(W * 0.72, H * 0.84);
     this.female.setFlipX(true);
@@ -290,7 +287,6 @@ class GameScene extends Phaser.Scene {
     this.time.delayedCall(1800, () => {
       bubble.destroy();
       this.female.setFlipX(false);
-
       const runText = this.add.text(W * 0.72, H * 0.66, '💨 Chờ anh nhé~', {
         fontSize: '18px', fill: '#fde68a', fontFamily: 'Segoe UI',
         backgroundColor: '#0f172a', padding: { x: 10, y: 6 }
@@ -299,12 +295,8 @@ class GameScene extends Phaser.Scene {
         targets: runText, alpha: 0, duration: 600, delay: 800,
         onComplete: () => runText.destroy()
       });
-
       this.tweens.add({
-        targets: this.female,
-        x: W + 200,
-        duration: 1400,
-        ease: 'Power2.easeIn',
+        targets: this.female, x: W + 200, duration: 1400, ease: 'Power2.easeIn',
         onComplete: () => {
           this.female.setVisible(false);
           if (this.hintText) this.hintText.setVisible(true);
@@ -404,7 +396,9 @@ class GameScene extends Phaser.Scene {
       fontSize:'24px',fill:'#f9a8d4',fontFamily:'Segoe UI',fontStyle:'bold'
     }).setOrigin(0.5).setDepth(19).setAlpha(0);
     this.tweens.add({targets:nt,alpha:1,duration:400,delay:400});
-    const warnT=this.add.text(W/2,H*.56,'⚠️ Trả lời sai = Thua ngay!',{
+    const totalQ=boss.totalQ||1;
+    const warnT=this.add.text(W/2,H*.56,
+      totalQ>1?`⚠️ Trả lời đúng ${totalQ} câu để thắng!`:'⚠️ Trả lời sai = Thua ngay!',{
       fontSize:'18px',fill:'#fca5a5',fontFamily:'Segoe UI',fontStyle:'bold'
     }).setOrigin(0.5).setDepth(19).setAlpha(0);
     this.tweens.add({targets:warnT,alpha:1,duration:400,delay:600});
@@ -435,19 +429,27 @@ class GameScene extends Phaser.Scene {
     this.time.delayedCall(1100,()=>{
       if(this.bossAura) this.bossAura.x=W*.60;
       if(this.shieldSpr) this.shieldSpr.x=W*.60;
-      this.askQuestion();
+      this.askQuestion(1);
     });
   }
 
-  askQuestion(){
+  askQuestion(qNum=1){
     const boss=BOSSES[this.bossIndex];
+    const totalQ=boss.totalQ||1;
+    this.currentQNum=qNum;
     this.currentQ=pickQ();
+    const bossColors={mini1:'#dc2626',mini2:'#2563eb',final:'#7c3aed'};
+    document.getElementById('question-box').style.borderColor=bossColors[boss.id];
     document.getElementById('question-text').textContent=this.currentQ.q;
     document.getElementById('answer-input').value='';
     document.getElementById('feedback').textContent='';
-    const bossColors={mini1:'#dc2626',mini2:'#2563eb',final:'#7c3aed'};
-    document.getElementById('question-box').style.borderColor=bossColors[boss.id];
     document.getElementById('question-overlay').style.display='flex';
+    // Hiện tiến độ câu hỏi
+    const col=boss.timer<=3?'#f43f5e':'#fbbf24';
+    if(totalQ>1){
+      document.getElementById('question-progress').innerHTML=
+        `⚔️ ${boss.name} &nbsp;|&nbsp; Câu <span style="color:#f9a8d4;font-weight:bold">${qNum}/${totalQ}</span> &nbsp;|&nbsp; ⏱️ <span style="color:${col};font-weight:bold">${boss.timer}s</span>`;
+    }
     this.startTimer(boss.timer);
     setTimeout(()=>{
       const inp=document.getElementById('answer-input');
@@ -465,9 +467,15 @@ class GameScene extends Phaser.Scene {
   }
   refreshTimer(){
     const boss=BOSSES[this.bossIndex]||BOSSES[BOSSES.length-1];
+    const totalQ=boss.totalQ||1;
     const col=this.timerSecs<=3?'#f43f5e':'#fbbf24';
-    document.getElementById('question-progress').innerHTML=
-      `⚔️ ${boss.name} &nbsp;|&nbsp; ⏱️ <span style="color:${col};font-weight:bold">${this.timerSecs}s</span>`;
+    if(totalQ>1){
+      document.getElementById('question-progress').innerHTML=
+        `⚔️ ${boss.name} &nbsp;|&nbsp; Câu <span style="color:#f9a8d4;font-weight:bold">${this.currentQNum}/${totalQ}</span> &nbsp;|&nbsp; ⏱️ <span style="color:${col};font-weight:bold">${this.timerSecs}s</span>`;
+    } else {
+      document.getElementById('question-progress').innerHTML=
+        `⚔️ ${boss.name} &nbsp;|&nbsp; ⏱️ <span style="color:${col};font-weight:bold">${this.timerSecs}s</span>`;
+    }
   }
   onTimeout(){
     document.getElementById('feedback').style.color='#f59e0b';
@@ -482,12 +490,26 @@ class GameScene extends Phaser.Scene {
     const correct=this.currentQ.a.toLowerCase();
     const fb=document.getElementById('feedback');
     if(userAns===correct){
-      fb.style.color='#16a34a'; fb.textContent='✅ Đúng! POWER UP! 💥';
-      this.time.delayedCall(700,()=>{
-        document.getElementById('question-overlay').style.display='none';
-        document.getElementById('question-box').style.borderColor='';
-        this.triggerPower();
-      });
+      const boss=BOSSES[this.bossIndex];
+      const totalQ=boss.totalQ||1;
+      const qNum=this.currentQNum||1;
+      if(qNum<totalQ){
+        // Chưa đủ câu → hỏi tiếp
+        fb.style.color='#16a34a';
+        fb.textContent=`✅ Đúng! Còn ${totalQ-qNum} câu nữa... 💪`;
+        this.time.delayedCall(900,()=>{
+          document.getElementById('feedback').textContent='';
+          this.askQuestion(qNum+1);
+        });
+      } else {
+        // Đủ câu → POWER UP
+        fb.style.color='#16a34a'; fb.textContent='✅ Đúng! POWER UP! 💥';
+        this.time.delayedCall(700,()=>{
+          document.getElementById('question-overlay').style.display='none';
+          document.getElementById('question-box').style.borderColor='';
+          this.triggerPower();
+        });
+      }
     } else {
       fb.style.color='#dc2626'; fb.textContent='❌ Sai! Thua rồi!';
       this.time.delayedCall(1200,()=>this.processWrong());
@@ -726,7 +748,6 @@ class GameScene extends Phaser.Scene {
   }
 }
 
-// ← load config khách trước, sau đó mới khởi động game
 loadCustomerConfig(CUSTOMER_ID).finally(()=>{
   new Phaser.Game({
     type:Phaser.AUTO, width:window.innerWidth, height:window.innerHeight, parent:document.body,

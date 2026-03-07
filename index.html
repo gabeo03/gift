@@ -15,6 +15,7 @@
       overflow: hidden;
       background: #0f172a;
       touch-action: manipulation;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
 
     canvas {
@@ -52,14 +53,12 @@
     #question-progress {
       font-size: clamp(12px, 3.5vw, 16px);
       color: #94a3b8;
-      font-family: 'Segoe UI', sans-serif;
       line-height: 1.4;
     }
 
     #question-text {
       font-size: clamp(18px, 5vw, 26px);
       color: #f1f5f9;
-      font-family: 'Segoe UI', sans-serif;
       font-weight: 600;
       line-height: 1.4;
     }
@@ -68,14 +67,12 @@
       width: 100%;
       padding: clamp(10px, 2.5vw, 14px) clamp(12px, 3vw, 18px);
       font-size: clamp(16px, 4.5vw, 20px);
-      font-family: 'Segoe UI', sans-serif;
       background: #0f172a;
       color: #f1f5f9;
       border: 2px solid #334155;
       border-radius: 12px;
       outline: none;
       -webkit-appearance: none;
-      appearance: none;
     }
     #answer-input:focus { border-color: #6366f1; }
 
@@ -83,7 +80,6 @@
       width: 100%;
       padding: clamp(12px, 3vw, 16px);
       font-size: clamp(16px, 4.5vw, 20px);
-      font-family: 'Segoe UI', sans-serif;
       font-weight: 700;
       background: #6366f1;
       color: #fff;
@@ -92,13 +88,11 @@
       cursor: pointer;
       min-height: 52px;
       -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
     }
     #submit-btn:active { background: #4f46e5; transform: scale(0.97); }
 
     #feedback {
       font-size: clamp(14px, 4vw, 18px);
-      font-family: 'Segoe UI', sans-serif;
       min-height: 24px;
       font-weight: 600;
     }
@@ -108,150 +102,256 @@
       display: flex;
       position: fixed;
       inset: 0;
-      background: rgba(15,23,42,0.97);
+      background: linear-gradient(135deg, #0f172a 0%, #1a0a2e 50%, #0f172a 100%);
       z-index: 200;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 16px;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
 
+    /* Hiệu ứng hạt nền */
+    #setup-overlay::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(236,72,153,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(99,102,241,0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
     #setup-box {
-      background: #1e293b;
-      border: 2px solid #ec4899;
-      border-radius: 20px;
-      padding: clamp(18px, 4vw, 32px);
-      width: min(94vw, 480px);
+      position: relative;
+      background: rgba(30, 41, 59, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1.5px solid rgba(236,72,153,0.4);
+      border-radius: 24px;
+      padding: clamp(20px, 5vw, 32px);
+      width: min(96vw, 460px);
+      max-height: 92vh;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
+      box-shadow:
+        0 0 0 1px rgba(236,72,153,0.1),
+        0 20px 60px rgba(0,0,0,0.5),
+        0 0 80px rgba(236,72,153,0.06);
+      overflow: hidden;
+    }
+
+    /* Header */
+    .setup-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .setup-emoji {
+      font-size: 36px;
+      line-height: 1;
+      filter: drop-shadow(0 0 12px rgba(236,72,153,0.6));
     }
 
     .setup-title {
       text-align: center;
-      color: #f9a8d4;
-      font-family: 'Segoe UI', sans-serif;
-      font-size: clamp(16px, 4.5vw, 20px);
-      font-weight: 700;
+      background: linear-gradient(135deg, #f9a8d4, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: clamp(17px, 4.5vw, 22px);
+      font-weight: 800;
+      letter-spacing: -0.3px;
     }
 
     .setup-subtitle {
       text-align: center;
       color: #64748b;
-      font-family: 'Segoe UI', sans-serif;
-      font-size: 13px;
-      margin-top: -8px;
+      font-size: clamp(12px, 3vw, 14px);
     }
 
+    /* List câu hỏi */
     #setup-qlist {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      max-height: 42vh;
+      gap: 8px;
+      max-height: 38vh;
       overflow-y: auto;
+      padding-right: 2px;
     }
     #setup-qlist::-webkit-scrollbar { width: 3px; }
-    #setup-qlist::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+    #setup-qlist::-webkit-scrollbar-track { background: transparent; }
+    #setup-qlist::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
 
     .setup-row {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 14px;
+      padding: 12px 12px 12px 14px;
       display: flex;
+      flex-direction: column;
       gap: 8px;
-      align-items: center;
-      animation: rowIn .25s ease;
+      animation: rowIn .22s ease;
+      transition: border-color .2s;
     }
-    @keyframes rowIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+    .setup-row:focus-within {
+      border-color: rgba(236,72,153,0.5);
+    }
+    @keyframes rowIn {
+      from { opacity:0; transform:translateY(-10px) scale(0.97); }
+      to   { opacity:1; transform:none; }
+    }
+
+    .setup-row-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
 
     .setup-qlabel {
       flex: 1;
-      font-size: 13px;
-      color: #94a3b8;
-      font-family: 'Segoe UI', sans-serif;
-      line-height: 1.4;
+      font-size: clamp(13px, 3.5vw, 15px);
+      color: #cbd5e1;
+      line-height: 1.5;
+      font-weight: 500;
     }
 
-    .setup-ans-inp {
-      width: 110px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: #0f172a;
-      color: #f1f5f9;
-      border: 1.5px solid #334155;
-      font-size: 14px;
-      font-family: 'Segoe UI', sans-serif;
-      outline: none;
-      -webkit-appearance: none;
+    .setup-qnum {
+      color: #ec4899;
+      font-weight: 700;
     }
-    .setup-ans-inp:focus { border-color: #ec4899; }
 
     .setup-del-btn {
-      background: none;
-      border: none;
+      flex-shrink: 0;
+      background: rgba(244,63,94,0.12);
+      border: 1px solid rgba(244,63,94,0.25);
       color: #f43f5e;
       cursor: pointer;
-      font-size: 16px;
-      padding: 4px 6px;
-      border-radius: 6px;
+      font-size: 13px;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       -webkit-tap-highlight-color: transparent;
+      transition: background .15s;
     }
+    .setup-del-btn:active { background: rgba(244,63,94,0.28); }
 
+    .setup-ans-inp {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 10px;
+      background: rgba(15,23,42,0.8);
+      color: #f1f5f9;
+      border: 1.5px solid #1e3a5f;
+      font-size: clamp(14px, 3.5vw, 15px);
+      outline: none;
+      -webkit-appearance: none;
+      transition: border-color .2s;
+    }
+    .setup-ans-inp:focus { border-color: #ec4899; }
+    .setup-ans-inp::placeholder { color: #475569; }
+
+    /* Divider */
     .setup-divider {
       height: 1px;
-      background: linear-gradient(to right, transparent, #334155, transparent);
+      background: linear-gradient(to right, transparent, rgba(99,102,241,0.3), transparent);
+      flex-shrink: 0;
     }
 
-    .setup-add-row {
+    /* Add row */
+    .setup-add-section {
       display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .setup-add-inputs {
+      display: flex;
+      flex-direction: column;
       gap: 8px;
     }
 
-    .setup-add-row input {
-      padding: 10px 13px;
-      border-radius: 10px;
-      background: #0f172a;
+    .setup-add-inputs input {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 11px;
+      background: rgba(15,23,42,0.7);
       color: #f1f5f9;
-      border: 1.5px solid #334155;
-      font-size: 14px;
-      font-family: 'Segoe UI', sans-serif;
+      border: 1.5px solid #1e3a5f;
+      font-size: clamp(14px, 3.5vw, 15px);
       outline: none;
       -webkit-appearance: none;
+      transition: border-color .2s;
     }
-    .setup-add-row input:focus { border-color: #6366f1; }
-    #setup-q-input { flex: 1; }
-    #setup-a-input { width: 110px; }
+    .setup-add-inputs input:focus { border-color: #6366f1; }
+    .setup-add-inputs input::placeholder { color: #475569; }
 
     #setup-add-btn {
-      padding: 10px 14px;
-      background: linear-gradient(135deg, #6366f1, #ec4899);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 18px;
-      cursor: pointer;
+      width: 100%;
+      padding: 11px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(236,72,153,0.25));
+      border: 1.5px solid rgba(99,102,241,0.4);
+      color: #a5b4fc;
+      border-radius: 11px;
+      font-size: 14px;
       font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.3px;
       -webkit-tap-highlight-color: transparent;
+      transition: background .15s, border-color .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    #setup-add-btn:active {
+      background: linear-gradient(135deg, rgba(99,102,241,0.4), rgba(236,72,153,0.4));
     }
 
+    /* Start button */
     #setup-start-btn {
-      padding: clamp(13px, 3vw, 16px);
-      background: linear-gradient(135deg, #ec4899, #6366f1);
+      padding: clamp(14px, 3.5vw, 18px);
+      background: linear-gradient(135deg, #ec4899, #8b5cf6);
       color: #fff;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: clamp(15px, 4vw, 18px);
-      font-weight: 700;
-      font-family: 'Segoe UI', sans-serif;
+      font-weight: 800;
       cursor: pointer;
-      transition: opacity .2s, transform .15s;
-      min-height: 52px;
+      transition: opacity .2s, transform .15s, box-shadow .2s;
+      min-height: 54px;
       -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 4px 20px rgba(236,72,153,0.35);
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
     }
     #setup-start-btn:disabled {
-      opacity: 0.38;
+      opacity: 0.35;
       cursor: not-allowed;
+      box-shadow: none;
     }
     #setup-start-btn:not(:disabled):active {
       transform: scale(0.97);
+      box-shadow: 0 2px 10px rgba(236,72,153,0.25);
+    }
+
+    /* Counter badge */
+    .setup-counter {
+      text-align: center;
+      font-size: 12px;
+      color: #475569;
+    }
+    .setup-counter span {
+      color: #ec4899;
+      font-weight: 700;
     }
   </style>
 </head>
@@ -260,26 +360,36 @@
   <!-- ===== SETUP OVERLAY ===== -->
   <div id="setup-overlay">
     <div id="setup-box">
-      <div style="text-align:center;font-size:32px">💕</div>
-      <div class="setup-title">Crush đưa ra thử thách~</div>
-      <div class="setup-subtitle">Điền đáp án đúng để chinh phục crush!</div>
+
+      <div class="setup-header">
+        <div class="setup-emoji">💕</div>
+        <div class="setup-title">Crush đưa ra thử thách~</div>
+        <div class="setup-subtitle">Điền đáp án đúng để chinh phục crush!</div>
+      </div>
 
       <div id="setup-qlist"></div>
 
       <div class="setup-divider"></div>
 
       <!-- Thêm câu hỏi mới -->
-      <div class="setup-add-row">
-        <input id="setup-q-input" type="text" placeholder="❓ Câu hỏi..."
-               autocomplete="off" autocorrect="off" autocapitalize="off"/>
-        <input id="setup-a-input" type="text" placeholder="✅ Đáp án"
-               autocomplete="off" autocorrect="off" autocapitalize="off"/>
-        <button id="setup-add-btn" onclick="setupAddQ()">➕</button>
+      <div class="setup-add-section">
+        <div class="setup-add-inputs">
+          <input id="setup-q-input" type="text" placeholder="❓  Nhập câu hỏi mới..."
+                 autocomplete="off" autocorrect="off" autocapitalize="off"/>
+          <input id="setup-a-input" type="text" placeholder="✅  Đáp án đúng..."
+                 autocomplete="off" autocorrect="off" autocapitalize="off"/>
+        </div>
+        <button id="setup-add-btn" onclick="setupAddQ()">
+          ➕ Thêm câu hỏi
+        </button>
       </div>
+
+      <div class="setup-counter" id="setup-counter"></div>
 
       <button id="setup-start-btn" onclick="setupDone()" disabled>
         💕 Bắt đầu thôi~
       </button>
+
     </div>
   </div>
 
@@ -304,7 +414,6 @@
   </div>
 
   <script>
-    // ── Câu hỏi gợi ý mặc định (để trống đáp án, người dùng tự điền)
     const SETUP_DEFAULT = [
       { q: "Ngày sinh của em (dd/mm/yyyy)?", a: "" },
       { q: "Món ăn yêu thích của em?",       a: "" },
@@ -321,20 +430,33 @@
         const row = document.createElement('div');
         row.className = 'setup-row';
         row.innerHTML = `
-          <span class="setup-qlabel">${i + 1}. ${item.q}</span>
+          <div class="setup-row-top">
+            <span class="setup-qlabel">
+              <span class="setup-qnum">${i + 1}.</span> ${item.q}
+            </span>
+            <button class="setup-del-btn" onclick="setupRemoveQ(${i})" title="Xóa">✕</button>
+          </div>
           <input
             class="setup-ans-inp"
             type="text"
-            placeholder="đáp án…"
+            placeholder="Nhập đáp án đúng..."
             value="${item.a}"
             autocomplete="off" autocorrect="off" autocapitalize="off"
             oninput="setupQuestions[${i}].a=this.value.trim();checkSetupReady()"
           />
-          <button class="setup-del-btn" onclick="setupRemoveQ(${i})">✕</button>
         `;
         el.appendChild(row);
       });
       checkSetupReady();
+      updateCounter();
+    }
+
+    function updateCounter() {
+      const filled = setupQuestions.filter(x => x.a !== '').length;
+      const total  = setupQuestions.length;
+      const el = document.getElementById('setup-counter');
+      if (total === 0) { el.textContent = ''; return; }
+      el.innerHTML = `Đã điền <span>${filled}/${total}</span> đáp án`;
     }
 
     function setupAddQ() {
@@ -342,13 +464,13 @@
       const aEl = document.getElementById('setup-a-input');
       const q = qEl.value.trim();
       const a = aEl.value.trim();
-      if (!q) { qEl.focus(); return; }
+      if (!q) { qEl.focus(); qEl.style.borderColor='#f43f5e'; setTimeout(()=>qEl.style.borderColor='',800); return; }
       setupQuestions.push({ q, a });
       qEl.value = ''; aEl.value = '';
       renderSetupList();
-      // scroll xuống cuối list
       const list = document.getElementById('setup-qlist');
       list.scrollTop = list.scrollHeight;
+      qEl.focus();
     }
 
     function setupRemoveQ(i) {
@@ -360,21 +482,18 @@
       const ok = setupQuestions.length > 0 &&
         setupQuestions.every(x => x.a !== '');
       document.getElementById('setup-start-btn').disabled = !ok;
+      updateCounter();
     }
 
     function setupDone() {
-      // Lưu câu hỏi vào global để main.js dùng
       window.CUSTOM_QUESTIONS = setupQuestions.map(x => ({
         q: x.q,
         a: x.a.trim().toLowerCase()
       }));
-      // Ẩn setup
       document.getElementById('setup-overlay').style.display = 'none';
-      // Gọi game bắt đầu (female chạy đi)
       if (typeof window.gameReady === 'function') window.gameReady();
     }
 
-    // Enter để thêm câu hỏi
     document.getElementById('setup-q-input')
       .addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('setup-a-input').focus(); });
     document.getElementById('setup-a-input')
