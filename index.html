@@ -2,7 +2,6 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <!-- MOBILE: viewport + no-zoom + fullscreen -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -15,13 +14,11 @@
       width: 100%; height: 100%;
       overflow: hidden;
       background: #0f172a;
-      /* Ngăn double-tap zoom trên iOS */
       touch-action: manipulation;
     }
 
     canvas {
       display: block;
-      /* Đảm bảo canvas full màn hình */
       width: 100% !important;
       height: 100% !important;
     }
@@ -33,11 +30,9 @@
       inset: 0;
       background: rgba(0,0,0,0.78);
       z-index: 100;
-      /* Căn giữa nội dung, hỗ trợ virtual keyboard đẩy lên */
       align-items: flex-start;
       justify-content: center;
       padding-top: 8vh;
-      /* Scroll nếu bàn phím che */
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
@@ -51,7 +46,6 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-      /* Đẩy lên khi bàn phím mở */
       margin-bottom: env(keyboard-inset-height, 0px);
     }
 
@@ -74,7 +68,6 @@
       width: 100%;
       padding: clamp(10px, 2.5vw, 14px) clamp(12px, 3vw, 18px);
       font-size: clamp(16px, 4.5vw, 20px);
-      /* font-size >= 16px để iOS không zoom */
       font-family: 'Segoe UI', sans-serif;
       background: #0f172a;
       color: #f1f5f9;
@@ -97,7 +90,6 @@
       border: none;
       border-radius: 12px;
       cursor: pointer;
-      /* Dễ bấm trên mobile */
       min-height: 52px;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
@@ -110,11 +102,188 @@
       min-height: 24px;
       font-weight: 600;
     }
+
+    /* ===== SETUP OVERLAY ===== */
+    #setup-overlay {
+      display: flex;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.97);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #setup-box {
+      background: #1e293b;
+      border: 2px solid #ec4899;
+      border-radius: 20px;
+      padding: clamp(18px, 4vw, 32px);
+      width: min(94vw, 480px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .setup-title {
+      text-align: center;
+      color: #f9a8d4;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: clamp(16px, 4.5vw, 20px);
+      font-weight: 700;
+    }
+
+    .setup-subtitle {
+      text-align: center;
+      color: #64748b;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 13px;
+      margin-top: -8px;
+    }
+
+    #setup-qlist {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 42vh;
+      overflow-y: auto;
+    }
+    #setup-qlist::-webkit-scrollbar { width: 3px; }
+    #setup-qlist::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+    .setup-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      animation: rowIn .25s ease;
+    }
+    @keyframes rowIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+
+    .setup-qlabel {
+      flex: 1;
+      font-size: 13px;
+      color: #94a3b8;
+      font-family: 'Segoe UI', sans-serif;
+      line-height: 1.4;
+    }
+
+    .setup-ans-inp {
+      width: 110px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #f1f5f9;
+      border: 1.5px solid #334155;
+      font-size: 14px;
+      font-family: 'Segoe UI', sans-serif;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .setup-ans-inp:focus { border-color: #ec4899; }
+
+    .setup-del-btn {
+      background: none;
+      border: none;
+      color: #f43f5e;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .setup-divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #334155, transparent);
+    }
+
+    .setup-add-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .setup-add-row input {
+      padding: 10px 13px;
+      border-radius: 10px;
+      background: #0f172a;
+      color: #f1f5f9;
+      border: 1.5px solid #334155;
+      font-size: 14px;
+      font-family: 'Segoe UI', sans-serif;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .setup-add-row input:focus { border-color: #6366f1; }
+    #setup-q-input { flex: 1; }
+    #setup-a-input { width: 110px; }
+
+    #setup-add-btn {
+      padding: 10px 14px;
+      background: linear-gradient(135deg, #6366f1, #ec4899);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      font-weight: 700;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #setup-start-btn {
+      padding: clamp(13px, 3vw, 16px);
+      background: linear-gradient(135deg, #ec4899, #6366f1);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: clamp(15px, 4vw, 18px);
+      font-weight: 700;
+      font-family: 'Segoe UI', sans-serif;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+      min-height: 52px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #setup-start-btn:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+    #setup-start-btn:not(:disabled):active {
+      transform: scale(0.97);
+    }
   </style>
 </head>
 <body>
 
-  <!-- Question Overlay -->
+  <!-- ===== SETUP OVERLAY ===== -->
+  <div id="setup-overlay">
+    <div id="setup-box">
+      <div style="text-align:center;font-size:32px">💕</div>
+      <div class="setup-title">Crush đưa ra thử thách~</div>
+      <div class="setup-subtitle">Điền đáp án đúng để chinh phục crush!</div>
+
+      <div id="setup-qlist"></div>
+
+      <div class="setup-divider"></div>
+
+      <!-- Thêm câu hỏi mới -->
+      <div class="setup-add-row">
+        <input id="setup-q-input" type="text" placeholder="❓ Câu hỏi..."
+               autocomplete="off" autocorrect="off" autocapitalize="off"/>
+        <input id="setup-a-input" type="text" placeholder="✅ Đáp án"
+               autocomplete="off" autocorrect="off" autocapitalize="off"/>
+        <button id="setup-add-btn" onclick="setupAddQ()">➕</button>
+      </div>
+
+      <button id="setup-start-btn" onclick="setupDone()" disabled>
+        💕 Bắt đầu thôi~
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== QUESTION OVERLAY ===== -->
   <div id="question-overlay">
     <div id="question-box">
       <div id="question-progress"></div>
@@ -133,6 +302,86 @@
       <div id="feedback"></div>
     </div>
   </div>
+
+  <script>
+    // ── Câu hỏi gợi ý mặc định (để trống đáp án, người dùng tự điền)
+    const SETUP_DEFAULT = [
+      { q: "Ngày sinh của em (dd/mm/yyyy)?", a: "" },
+      { q: "Món ăn yêu thích của em?",       a: "" },
+      { q: "Biệt danh của em?",               a: "" },
+      { q: "Màu sắc yêu thích của em?",       a: "" },
+    ];
+
+    let setupQuestions = SETUP_DEFAULT.map(x => ({ ...x }));
+
+    function renderSetupList() {
+      const el = document.getElementById('setup-qlist');
+      el.innerHTML = '';
+      setupQuestions.forEach((item, i) => {
+        const row = document.createElement('div');
+        row.className = 'setup-row';
+        row.innerHTML = `
+          <span class="setup-qlabel">${i + 1}. ${item.q}</span>
+          <input
+            class="setup-ans-inp"
+            type="text"
+            placeholder="đáp án…"
+            value="${item.a}"
+            autocomplete="off" autocorrect="off" autocapitalize="off"
+            oninput="setupQuestions[${i}].a=this.value.trim();checkSetupReady()"
+          />
+          <button class="setup-del-btn" onclick="setupRemoveQ(${i})">✕</button>
+        `;
+        el.appendChild(row);
+      });
+      checkSetupReady();
+    }
+
+    function setupAddQ() {
+      const qEl = document.getElementById('setup-q-input');
+      const aEl = document.getElementById('setup-a-input');
+      const q = qEl.value.trim();
+      const a = aEl.value.trim();
+      if (!q) { qEl.focus(); return; }
+      setupQuestions.push({ q, a });
+      qEl.value = ''; aEl.value = '';
+      renderSetupList();
+      // scroll xuống cuối list
+      const list = document.getElementById('setup-qlist');
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function setupRemoveQ(i) {
+      setupQuestions.splice(i, 1);
+      renderSetupList();
+    }
+
+    function checkSetupReady() {
+      const ok = setupQuestions.length > 0 &&
+        setupQuestions.every(x => x.a !== '');
+      document.getElementById('setup-start-btn').disabled = !ok;
+    }
+
+    function setupDone() {
+      // Lưu câu hỏi vào global để main.js dùng
+      window.CUSTOM_QUESTIONS = setupQuestions.map(x => ({
+        q: x.q,
+        a: x.a.trim().toLowerCase()
+      }));
+      // Ẩn setup
+      document.getElementById('setup-overlay').style.display = 'none';
+      // Gọi game bắt đầu (female chạy đi)
+      if (typeof window.gameReady === 'function') window.gameReady();
+    }
+
+    // Enter để thêm câu hỏi
+    document.getElementById('setup-q-input')
+      .addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('setup-a-input').focus(); });
+    document.getElementById('setup-a-input')
+      .addEventListener('keypress', e => { if (e.key === 'Enter') setupAddQ(); });
+
+    renderSetupList();
+  </script>
 
   <script type="module" src="/main.js"></script>
 </body>

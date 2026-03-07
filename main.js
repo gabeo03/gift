@@ -29,7 +29,10 @@ function loadCustomerConfig(id) {
     .then(r => (r.ok ? r.json() : { questions: null }))
     .catch(() => ({ questions: null }))
     .then(cfg => {
-      if (Array.isArray(cfg.questions) && cfg.questions.length) {
+      // Ưu tiên: Setup screen > config.json > default
+      if (window.CUSTOM_QUESTIONS?.length) {
+        QUESTIONS = window.CUSTOM_QUESTIONS;
+      } else if (Array.isArray(cfg.questions) && cfg.questions.length) {
         QUESTIONS = cfg.questions;
       } else {
         QUESTIONS = [...DEFAULT_QUESTIONS];
@@ -65,10 +68,8 @@ function pickQ() {
 class LoadingScene extends Phaser.Scene {
   constructor() { super({ key:'LoadingScene' }); }
   preload() {
-    // ← ảnh dino load theo từng khách hàng
     this.load.image('dino_male',   `${CUSTOMER_DIR}/dino_male.png`);
     this.load.image('dino_female', `${CUSTOMER_DIR}/dino_female.png`);
-    // nhạc dùng chung từ public/assets
     this.load.audio('bgm',      '/assets/music.mp3');
     this.load.audio('snd_boss', '/assets/boss.mp3');
     this.load.audio('snd_win',  '/assets/win.mp3');
@@ -236,13 +237,22 @@ class GameScene extends Phaser.Scene {
       backgroundColor:'#0f172a',padding:{x:20,y:14},align:'center'
     }).setOrigin(0.5).setDepth(20);
 
-    this.spaceKey.once('down',()=>this.startGame());
-    this.cursors.up.once('down',()=>this.startGame());
+    // Ẩn hint cho đến khi female chạy đi xong
+    this.hintText.setVisible(false);
 
     document.getElementById('submit-btn').onclick=()=>this.checkAnswer();
     document.getElementById('answer-input').onkeydown=e=>{if(e.key==='Enter')this.checkAnswer();};
 
     this.updateDistBar(); this.updateLivesUI();
+
+    // Đăng ký callback cho setup screen
+    window.gameReady = () => {
+      if (window.CUSTOM_QUESTIONS?.length) {
+        QUESTIONS = window.CUSTOM_QUESTIONS;
+        qPool = [...QUESTIONS]; qUsed = [];
+      }
+      this.playFemaleRunAway();
+    };
   }
 
   toggleMute(){
@@ -262,10 +272,52 @@ class GameScene extends Phaser.Scene {
     this.startObstacleTimer();
   }
 
+  playFemaleRunAway() {
+    const W = this.scale.width, H = this.scale.height;
+
+    this.female.setVisible(true);
+    this.female.setPosition(W * 0.72, H * 0.84);
+    this.female.setFlipX(true);
+    this.female.setAlpha(0);
+    this.tweens.add({ targets: this.female, alpha: 1, duration: 400 });
+
+    const bubble = this.add.text(W * 0.72, H * 0.72, '👀 ???', {
+      fontSize: '20px', fill: '#f9a8d4', fontFamily: 'Segoe UI',
+      backgroundColor: '#1e293b', padding: { x: 12, y: 8 }
+    }).setOrigin(0.5).setDepth(20).setAlpha(0);
+    this.tweens.add({ targets: bubble, alpha: 1, duration: 300, delay: 400 });
+
+    this.time.delayedCall(1800, () => {
+      bubble.destroy();
+      this.female.setFlipX(false);
+
+      const runText = this.add.text(W * 0.72, H * 0.66, '💨 Chờ anh nhé~', {
+        fontSize: '18px', fill: '#fde68a', fontFamily: 'Segoe UI',
+        backgroundColor: '#0f172a', padding: { x: 10, y: 6 }
+      }).setOrigin(0.5).setDepth(20);
+      this.tweens.add({
+        targets: runText, alpha: 0, duration: 600, delay: 800,
+        onComplete: () => runText.destroy()
+      });
+
+      this.tweens.add({
+        targets: this.female,
+        x: W + 200,
+        duration: 1400,
+        ease: 'Power2.easeIn',
+        onComplete: () => {
+          this.female.setVisible(false);
+          if (this.hintText) this.hintText.setVisible(true);
+          this.spaceKey.once('down', () => this.startGame());
+          this.cursors.up.once('down', () => this.startGame());
+        }
+      });
+    });
+  }
+
   doJump(){
     if(this.dino&&this.dino.body&&this.dino.body.blocked.down){
       this.dino.setVelocityY(-640);
-      this.playSfx('snd_jump',{volume:0.6});
     }
   }
 
@@ -281,7 +333,6 @@ class GameScene extends Phaser.Scene {
     if(this.st!==ST.RUNNING) return;
     if((this.cursors.up.isDown||this.spaceKey.isDown)&&this.dino.body.blocked.down){
       this.dino.setVelocityY(-640);
-      this.playSfx('snd_jump',{volume:0.6});
     }
     this.obstacleSpeed=Math.max(-620,-300-Math.floor(this.score/15)*14);
     this.clouds.forEach(c=>{c.x-=0.8;if(c.x<-90) c.x=this.scale.width+90;});
@@ -315,7 +366,6 @@ class GameScene extends Phaser.Scene {
     obstacle.destroy();
     this.cameras.main.shake(280,0.013);
     this.dino.setTint(0xff4444);
-    this.playSfx('snd_hit',{volume:0.7});
     this.time.delayedCall(380,()=>{if(this.dino) this.dino.clearTint();});
     this.lives--;
     this.updateLivesUI();
@@ -433,7 +483,6 @@ class GameScene extends Phaser.Scene {
     const fb=document.getElementById('feedback');
     if(userAns===correct){
       fb.style.color='#16a34a'; fb.textContent='✅ Đúng! POWER UP! 💥';
-      this.playSfx('snd_power',{volume:0.8});
       this.time.delayedCall(700,()=>{
         document.getElementById('question-overlay').style.display='none';
         document.getElementById('question-box').style.borderColor='';
@@ -441,7 +490,6 @@ class GameScene extends Phaser.Scene {
       });
     } else {
       fb.style.color='#dc2626'; fb.textContent='❌ Sai! Thua rồi!';
-      this.playSfx('snd_hit',{volume:0.8});
       this.time.delayedCall(1200,()=>this.processWrong());
     }
   }
@@ -572,7 +620,6 @@ class GameScene extends Phaser.Scene {
               });
               btnGift.on('pointerover',()=>{ btnGift.setStyle({backgroundColor:'#db2777'}); });
               btnGift.on('pointerout', ()=>{ btnGift.setStyle({backgroundColor:'#ec4899'}); });
-              // ← chuyển sang /<customer>/win thay vì win.html
               btnGift.on('pointerdown',()=>{ window.location.href=`/${CUSTOMER_ID}/win`; });
               const btnReplay=this.add.text(W/2,H*.88,'▶  Chơi lại',{
                 fontSize:'20px',fill:'#cbd5e1',fontFamily:'Segoe UI',
@@ -620,7 +667,6 @@ class GameScene extends Phaser.Scene {
     });
     btnPunish.on('pointerover',()=>{ btnPunish.setStyle({backgroundColor:'#9a3412'}); });
     btnPunish.on('pointerout', ()=>{ btnPunish.setStyle({backgroundColor:'#7c2d12'}); });
-    // ← chuyển sang /<customer>/lose thay vì lose.html
     btnPunish.on('pointerdown',()=>{ window.location.href=`/${CUSTOMER_ID}/lose`; });
     const btnRetry=this.add.text(W/2,H*.70,'🔄  Thử lại',{
       fontSize:'20px',fill:'#cbd5e1',fontFamily:'Segoe UI',
